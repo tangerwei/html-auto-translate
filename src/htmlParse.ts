@@ -1,22 +1,14 @@
-import {readFileSync, writeFileSync} from "fs";
+import {copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync} from "fs";
 import {load} from "cheerio";
 import {v4} from "uuid"
 import {htmlWrite} from "./htmlWrite";
 import {join} from "path";
-import {Translator} from "deepl-node";
-import { Converter } from "opencc-js";
 import {compile} from "handlebars";
+import HtmlParserConfig from "./config";
 
-const deepL = new Translator("8b705d76-439b-055e-e5c5-7055b36c6cc9:fx");
-const converter = Converter({ from: "cn", to: "hk" });
+let translate:HtmlParserConfig
 
 const wordSet: any = new Set();
-
-// 判断语言类型
-function judgeLanguage(text: string){
-    // 是否包含中文
-    return /[\u4e00-\u9fa5]/.test(text);
-}
 
 // 解析文字是否需要翻译
 function analysisText(text: string){
@@ -94,12 +86,6 @@ function traverseNodes(node: any) {
     }
 }
 
-// 替换html中的文字 -> 生成{{uuid}}
-function generateTemplate(fileText: string, dict: any){
-
-
-}
-
 async function parseHtml(fileText: string){
     const $ = load(fileText);
     traverseNodes($('body')[0]);
@@ -119,11 +105,11 @@ async function parseHtml(fileText: string){
     // 仅翻译中文条目，en to zh 不准确
     // const wordCN = words.filter(judgeLanguage);
     if(words.length > 0){
-        const resCN = await deepL.translateText(words, "zh","en-US");
+        const resCN = await translate.deepL.translateText(words, "zh","en-US");
         words.forEach((word: string, index: number) => {
             if(resCN[index]){
                 dict[word].value['en'] = resCN[index].text;
-                dict[word].value['tw'] = converter(word);
+                dict[word].value['tw'] = translate.converter(word);
                 dict[word].value['cn'] = word;
             }
         })
@@ -139,21 +125,96 @@ async function parseHtml(fileText: string){
     })
     // 生成翻译后的html
     const zhHtml = compile(template)(zhJson);
-    const zhPath = join(__dirname, "../dist/zh.html");
-    writeFile(zhPath, zhHtml);
     const enHtml = compile(template)(enJson);
-    const enPath = join(__dirname, "../dist/en.html");
-    writeFile(enPath, enHtml);
     const twHtml = compile(template)(twJson);
-    const twPath = join(__dirname, "../dist/tw.html");
-    writeFile(twPath, twHtml);
+    return {
+        zh: zhHtml,
+        en: enHtml,
+        tw: twHtml,
+    }
 }
 
 function writeFile(filePath: string, content: string){
     writeFileSync(filePath, content, 'utf-8');
 }
 
-export function analysisHtml(filePath: string){
+async function analysisHtml(filePath: string){
     const fileText = readFileSync(filePath, 'utf-8');
-    parseHtml(fileText);
+    return await parseHtml(fileText);
+}
+
+let basicPath = ""
+const basePathMap:any = {};
+
+function checkDir(basePath: string){
+    // 相对根目录的路径为
+    const relativePath = basePath.replace(basicPath, "");
+    // 目标路径
+    Object.keys(basePathMap).forEach((key: string) => {
+        const newPath = join(basePathMap[key], relativePath);
+        if(!existsSync(newPath)){
+            mkdirSync(newPath);
+        }
+    })
+    return relativePath;
+}
+
+const skipPath = [
+    'node_modules',
+    '.git',
+    '.vscode',
+    '.idea',
+]
+
+async function syncFolder(basePath: string){
+    // 检查目标目录是否存在 - basePathMap 所有对应的
+    const relativePath = checkDir(basePath);
+    const files = readdirSync(basePath, {withFileTypes: true});
+    for (const file of files) {
+        if(file.isDirectory()){
+            const folderPath = join(basePath, file.name);
+            if(skipPath.includes(file.name)){
+                continue;
+            }
+            await syncFolder(folderPath);
+        }
+        if(file.isFile()){
+            // html
+            if(file.name.endsWith(".html")){
+                const filePath = join(basePath, file.name);
+                const fileObject:any = await analysisHtml(filePath);
+                if(fileObject){
+                    Object.keys(fileObject).forEach((key: string) => {
+                        const sourceFilePath = join(basePathMap[key], relativePath, file.name);
+                        writeFile(sourceFilePath, fileObject[key]);
+                    })
+                }
+            }else{
+                Object.keys(basePathMap).forEach((key: string) => {
+                    const sourceFilePath = join(basePathMap[key], relativePath, file.name);
+                    const filePath = join(basePath, file.name);
+                    copyFileSync(filePath, sourceFilePath);
+                })
+            }
+        }
+    }
+}
+
+export async function analysisFolder(folderPath: string, config: HtmlParserConfig){
+    translate = config;
+    const basePath = folderPath.split('/').slice(0, -1).join('/');
+    basicPath = folderPath;
+    const distPath = join(basePath, "dist");
+    if(!existsSync(distPath)){
+        mkdirSync(distPath);
+    }
+    basePathMap.zh = join(distPath, 'zh');
+    basePathMap.en = join(distPath, 'en');
+    basePathMap.tw = join(distPath, 'tw');
+    Object.keys(basePathMap).forEach((key: string) => {
+        if(!existsSync(basePathMap[key])){
+            mkdirSync(basePathMap[key]);
+        }
+    })
+    await syncFolder(folderPath);
 }

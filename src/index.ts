@@ -1,8 +1,14 @@
-import { join } from "path";
-import {analysisHtml} from "./htmlParse";
-function test() {
-    const filePath = join(__dirname, "./zzz.html");
-    analysisHtml(filePath);
+import HtmlParserConfig from "./config";
+import {analysisFolder} from "./htmlParse";
+
+/**
+ * 翻译
+ * @param deepLToken
+ * @param folderPath
+ */
+function translate(deepLToken:string, folderPath: string){
+    const config = new HtmlParserConfig(deepLToken);
+    analysisFolder(folderPath, config);
 }
 
-test()
+export default translate;

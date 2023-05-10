@@ -7,8 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "ts-node src/main.test.ts",
     "build": "tsc",
-    "prepublishOnly": "npm run build",
-    "version": "git add -A && git commit -m 'Bump version'"
+    "prepublishOnly": "npm run build"
   },
   "repository": {
     "type": "git",

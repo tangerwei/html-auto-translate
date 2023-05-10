@@ -166,6 +166,17 @@ const skipPath = [
     '.idea',
 ]
 
+const skipFiles = [
+    '.DS_Store',
+    '.gitignore',
+    'package-lock.json',
+    'package.json',
+    'README.md',
+    'tsconfig.json',
+    'yarn.lock',
+    'translate.js',
+]
+
 async function syncFolder(basePath: string){
     // 检查目标目录是否存在 - basePathMap 所有对应的
     const relativePath = checkDir(basePath);
@@ -179,6 +190,9 @@ async function syncFolder(basePath: string){
             await syncFolder(folderPath);
         }
         if(file.isFile()){
+            if(skipFiles.includes(file.name)){
+                continue;
+            }
             // html
             if(file.name.endsWith(".html")){
                 const filePath = join(basePath, file.name);

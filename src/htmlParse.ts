@@ -1,7 +1,7 @@
 import {copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync} from "fs";
 import {load} from "cheerio";
 import {v4} from "uuid"
-import {htmlWrite} from "./htmlWrite";
+import {htmlWrite, outPut} from "./htmlWrite";
 import {join} from "path";
 import {compile} from "handlebars";
 import HtmlParserConfig from "./config";
@@ -92,25 +92,26 @@ async function parseHtml(fileText: string){
     analysisHeader($('head')[0]);
     // 生成字符表
     const dict:any = {}
-    for (const word of wordSet) {
+    wordSet.forEach((word) => {
         dict[word] = {
             key: v4(),
             value: {},
         };
-    }
+    });
     // const words = Object.keys(dict);
     const template = htmlWrite(fileText, dict);
+    const newDict = outPut.gDict
     // 假设即存在中文，也存在英文
-    const words = Object.keys(dict);
+    const words = Object.keys(newDict);
     // 仅翻译中文条目，en to zh 不准确
     // const wordCN = words.filter(judgeLanguage);
     if(words.length > 0){
         const resCN = await translate.deepL.translateText(words, "zh","en-US");
         words.forEach((word: string, index: number) => {
             if(resCN[index]){
-                dict[word].value['en'] = resCN[index].text;
-                dict[word].value['tw'] = translate.converter(word);
-                dict[word].value['cn'] = word;
+                newDict[word].value['en'] = resCN[index].text;
+                newDict[word].value['tw'] = translate.converter(word);
+                newDict[word].value['cn'] = word;
             }
         })
     }
@@ -118,7 +119,7 @@ async function parseHtml(fileText: string){
     const zhJson:any = {};
     const enJson:any = {};
     const twJson:any = {};
-    Object.values(dict).forEach((word: any) => {
+    Object.values(newDict).forEach((word: any) => {
         zhJson[word.key] = word.value['cn'];
         enJson[word.key] = word.value['en'];
         twJson[word.key] = word.value['tw'];

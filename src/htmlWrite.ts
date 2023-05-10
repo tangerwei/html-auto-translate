@@ -1,10 +1,13 @@
 import {load} from "cheerio";
 import {ignoreEl} from "./htmlParse";
 
-let gDict: any = {};
+export const outPut = {
+    gDict: {} as any,
+}
+
 
 function queryKey(word: string){
-    return gDict[word]?.key;
+    return outPut.gDict[word]?.key;
 }
 
 function analysisNode(node: any){
@@ -49,7 +52,7 @@ function analysisNode(node: any){
 
 export function htmlWrite(html: string, dict: any = {}) {
     const $ = load(html);
-    gDict = dict;
+    outPut.gDict = dict;
     $.root().each((i, el) => {
         analysisNode(el);
     });

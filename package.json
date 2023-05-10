@@ -2,17 +2,21 @@
   "name": "html-auto-translate",
   "version": "1.0.0",
   "description": "自动提取html内容，翻译",
-  "main": "index.js",
+  "main": "lib/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "ts-node src/main.test.ts"
+    "start": "ts-node src/main.test.ts",
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/tangerwei/html-auto-translate.git"
   },
   "keywords": [
-    "tangerwei"
+    "html",
+    "translate",
+    "deepl"
   ],
   "author": "tangerwei",
   "license": "MIT",

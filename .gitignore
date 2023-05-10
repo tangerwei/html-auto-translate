@@ -133,3 +133,4 @@ dist
 # test file
 main.test.ts
 dist/
+lib/

@@ -1,14 +1,27 @@
+import {analysisFolder, LoaderConfig} from "./htmlParse";
+import {Translator} from "deepl-node";
+import {Converter} from "opencc-js";
 import HtmlParserConfig from "./config";
-import {analysisFolder} from "./htmlParse";
+
 
 /**
  * 翻译
- * @param deepLToken
  * @param folderPath
+ * @param loaders
+ * @param domain
  */
-function translate(deepLToken:string, folderPath: string){
-    const config = new HtmlParserConfig(deepLToken);
-    analysisFolder(folderPath, config);
+function translate(folderPath:string, loaders: LoaderConfig[], domain: string){
+    const sysConfig: HtmlParserConfig = {};
+    // 翻译插件
+    loaders.forEach(config => {
+        if(config.loader === "en-US"){
+            sysConfig.deepL = new Translator(config.deepLToken)
+        }
+        if(config.loader === "zh-TW"){
+            sysConfig.converter = Converter({ from: "cn", to: "hk" });
+        }
+    })
+    analysisFolder(folderPath, sysConfig, domain);
 }
 
 export default translate;

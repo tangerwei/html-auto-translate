@@ -76,13 +76,15 @@ function analysisHeader(node: any) {
             }
         }
     }
-    if (node.type === 'text') {
-        resolveTextNode(node.data);
-    }
-    if (node.children && !ignoreEl(node)) {
-        node.children.forEach((child: any) => {
-            analysisHeader(child);
-        });
+    if(node.name !== 'script'){
+        if (node.type === 'text') {
+            resolveTextNode(node.data);
+        }
+        if (node.children && !ignoreEl(node)) {
+            node.children.forEach((child: any) => {
+                analysisHeader(child);
+            });
+        }
     }
 }
 
@@ -157,6 +159,7 @@ async function parseHtml(fileText: string) {
     if (translate.converter) {
         res.tw = compile(template)(twJson);
     }
+    // async 会变成 async=""
     return res;
 }
 
@@ -312,9 +315,12 @@ async function syncSeoFolder(outDir: string, domain: string, defaultFolderName: 
 
                 // 生成文件
                 const sourceFilePath = join(outDir, file.name);
-                writeFile(sourceFilePath, $.html({
+                const finalFile =  $.html({
                     decodeEntities: false,
-                }));
+                })
+                // async="" => async
+                const finalFileText = finalFile.replace(/async=""/g, "async");
+                writeFile(sourceFilePath, finalFileText);
             }
         }
     }

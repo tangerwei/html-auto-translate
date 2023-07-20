@@ -1,6 +1,6 @@
 {
   "name": "html-auto-translate",
-  "version": "1.0.9",
+  "version": "2.0.0",
   "description": "自动提取html内容，翻译",
   "main": "lib/index.js",
   "scripts": {

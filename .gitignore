@@ -134,3 +134,7 @@ dist
 main.test.ts
 dist/
 lib/
+
+src/html/
+src/dist/
+src/test.ts
